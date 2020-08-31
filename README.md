@@ -51,8 +51,8 @@ B.	 Copy and paste the script into the PowerShell console.
 It will take around 15-20 min to execute all the commands.
 
 
-Verify your policies added to the api
-Verify the product added to the APIM service
+Verify your policies added to the api,
+Verify the product added to the APIM service,
 Verify the api is added to the product.
 
 Note: Please check the Readme.docx
