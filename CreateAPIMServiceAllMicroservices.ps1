@@ -1,16 +1,16 @@
 $random = (New-Guid).ToString().Substring(0,8) 
 
 $subscriptionId = "4eda8ef1-7525-49f9-9b47-b88f1eb27512" 
+
+## your mail id of azure account...
 $adminEmail = "singhavi2020@outlook.com" 
 $location = "Central US" 
 $organisation = "OFSS"
 
-$apimServiceName = "alphagx-daytrader-apim-service" 
-$resourceGroupName = "alphagx-daytrader-apim-rg" 
+$apimServiceName = "alphagx-daytrader-apim-service2" 
+$resourceGroupName = "alphagx-daytrader-apim-rg2" 
 
 
-
-## your mail id of azure account...
 Select-AzSubscription -SubscriptionId $subscriptionId 
 Get-AzResourceGroup -Name $resourceGroupName -ErrorVariable notPresent -ErrorAction SilentlyContinue
 if ($notPresent)
@@ -305,7 +305,71 @@ $userId.Type = "string"
 New-AzApiManagementOperation -Context $apimContext -ApiId $apiIdPortfolio -OperationId $apiOperationId -Name $apiOperationName -Method GET -UrlTemplate $apiOperationTemplateUrl -Description $operationDescription -TemplateParameters @($userId)
 
 
-
 ## adding policies to product
-$productPolicy = '<policies><inbound><rate-limit calls="5" renewal-period="60" /><base /></inbound><outbound><base /></outbound></policies>'
-Set-AzApiManagementPolicy -Context $context  -Policy $productPolicy -ProductId $productId -PassThru
+$productPolicy = '<policies> 
+    <inbound> 
+	<rate-limit-by-key calls="4" renewal-period="10" counter-key="@(context.Subscription?.Id)" increment-condition="@(context.Response.StatusCode >= 200)" />
+<quota-by-key calls="10" bandwidth="7000" renewal-period="3600" counter-key="@(context.Request.IpAddress)" /> 
+      
+<check-header name="Ocp-Apim-Subscription-Key" failed-check-httpcode="401" failed-check-error-message="Not authorized" ignore-case="false"> 
+<value>dc00a02b88f54be1bb23409b26d9f8aa</value> 
+</check-header> 
+
+<ip-filter action="forbid"> 
+<address-range from="106.51.104.249" to="106.51.104.252" /> 
+<address>106.51.104.249</address> 
+</ip-filter> 
+	  <base /> 
+    </inbound> 
+    <outbound> 
+	<choose> 
+
+<when condition="@(context.Response.StatusCode >= 200)"> 
+
+<send-one-way-request mode="new"> 
+
+<set-url>https://enjqjdg3mr55g81.m.pipedream.net</set-url> 
+
+<set-method>POST</set-method> 
+
+<set-body>@{ 
+
+return new JObject( 
+
+new JProperty("username",context.Subscription.Id), 
+
+new JProperty("urlPath",context.Request.Url.Path + context.Request.Url.QueryString), 
+
+new JProperty("host",context.Request.Url.Host), 
+
+new JProperty("statusCode",context.Response.StatusCode) 
+
+).ToString(); 
+
+}</set-body> 
+
+</send-one-way-request> 
+
+</when> 
+
+</choose> 
+
+<set-header name="X-Powered-By" exists-action="delete" />
+<redirect-content-urls />
+        <base /> 
+    </outbound> 
+
+    <backend> 
+        <base /> 
+    </backend> 
+
+    <on-error> 
+        <base /> 
+    </on-error> 
+
+</policies>' 
+Set-AzApiManagementPolicy -Context $apimContext  -Policy $productPolicy -ProductId $productId -PassThru
+
+
+#$productPolicy = '<policies><inbound><rate-limit calls="5" renewal-period="60" /><base /></inbound><outbound><set-header name="X-Powered-By" exists-action="delete" /><redirect-content-urls /><rate-limit-by-key calls="4" renewal-period="10" counter-key="@(context.Subscription?.Id)" increment-condition="@(context.Response.StatusCode >= 200/><base /></outbound></policies>'
+#Set-AzApiManagementPolicy -Context $context  -Policy $productPolicy -ProductId $productId -PassThru
